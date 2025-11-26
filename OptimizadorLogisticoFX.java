@@ -41,7 +41,7 @@ public class OptimizadorLogisticoFX extends Application {
         root.setTop(crearHeader());
         root.setLeft(crearSidebarFijo()); // Panel de control izquierdo fijo
         root.setCenter(crearAreaResultados());
-        root.setBottom(crearFooter());
+
 
         Scene scene = new Scene(root, 1280, 800);
 
@@ -80,7 +80,9 @@ public class OptimizadorLogisticoFX extends Application {
         sidebarContent.getChildren().addAll(
                 crearSeccionFija("1. Carga de Datos", crearContenidoDatos()),
                 crearSeccionFija("2. Rutas y Transporte", crearContenidoGrafos()),
-                crearSeccionFija("3. Gestión de Inventario", crearContenidoAVL())
+                crearSeccionFija("3. Gestión de Inventario", crearContenidoAVL()),
+                crearSeccionFija("4. Recorridos ordenados",crearContenidoRecorridoOrdenados())
+
         );
 
         ScrollPane scrollPane = new ScrollPane(sidebarContent);
@@ -115,10 +117,12 @@ public class OptimizadorLogisticoFX extends Application {
         VBox box = new VBox(10);
 
         VBox group1 = new VBox(5);
-        group1.getChildren().addAll(new Label("Archivo de Rutas (.csv):"), txtRutaGrafo = new TextField("C:\\Users\\Usuario\\IdeaProjects\\ProyectoFinalAlgoritmos\\src\\ Copia de red_logistica_grafo.csv"));
+                group1.getChildren().addAll(new Label("Archivo de Rutas (.csv):"), txtRutaGrafo = new TextField("C:\\Users\\jalex\\Documents\\NEWSEMESTER\\Algoritmos\\ProyectoAlgoritmos\\Proyecto-Algoritmos\\Copia de red_logistica_grafo.csv"));
+
 
         VBox group2 = new VBox(5);
-        group2.getChildren().addAll(new Label("Archivo de Inventario (.csv):"), txtRutaAVL = new TextField("C:\\Users\\Usuario\\IdeaProjects\\ProyectoFinalAlgoritmos\\src\\Copia de inventario_avl.csv"));
+                group2.getChildren().addAll(new Label("Archivo de Inventario (.csv):"), txtRutaAVL = new TextField("C:\\Users\\jalex\\Documents\\NEWSEMESTER\\Algoritmos\\ProyectoAlgoritmos\\Proyecto-Algoritmos\\Copia de inventario_avl.csv"));
+
 
         Button btnCargar = new Button("Cargar Base de Datos");
         btnCargar.getStyleClass().add("btn-primary");
@@ -155,6 +159,28 @@ public class OptimizadorLogisticoFX extends Application {
         return box;
     }
 
+    private VBox crearContenidoRecorridoOrdenados(){
+    VBox box = new VBox(10);
+    
+    Button btnReporte = new Button("Reporte (Inorden)");
+        btnReporte.getStyleClass().add("btn-action");
+        btnReporte.setMaxWidth(Double.MAX_VALUE);
+        btnReporte.setOnAction(e -> ejecutarRecorridoInorden());
+
+        Button btnReporte2 = new Button("Reporte (postorden)");
+        btnReporte2.getStyleClass().add("btn-action");
+        btnReporte2.setMaxWidth(Double.MAX_VALUE);
+        btnReporte2.setOnAction(e -> ejecutarRecorridoPostorden());
+
+        Button btnReporte3 = new Button("Reporte (preorden)");
+        btnReporte3.getStyleClass().add("btn-action");
+        btnReporte3.setMaxWidth(Double.MAX_VALUE);
+        btnReporte3.setOnAction(e -> ejecutarRecorridoPreorden());
+
+        box.getChildren().addAll(btnReporte, btnReporte2  , btnReporte3);
+        return box;
+    }
+
     /** Contenido de la sección de gestión de Inventario AVL. */
     private VBox crearContenidoAVL() {
         VBox box = new VBox(10);
@@ -167,12 +193,7 @@ public class OptimizadorLogisticoFX extends Application {
         btnBuscar.setMaxWidth(Double.MAX_VALUE);
         btnBuscar.setOnAction(e -> ejecutarBusquedaAVL());
 
-        Button btnReporte = new Button("Reporte (Inorden)");
-        btnReporte.getStyleClass().add("btn-action");
-        btnReporte.setMaxWidth(Double.MAX_VALUE);
-        btnReporte.setOnAction(e -> ejecutarRecorridoInorden());
-
-        box.getChildren().addAll(groupBusqueda, new Label("Operaciones:"), btnBuscar, btnReporte);
+        box.getChildren().addAll(groupBusqueda, new Label("Operaciones:"), btnBuscar);
         return box;
     }
 
@@ -199,30 +220,11 @@ public class OptimizadorLogisticoFX extends Application {
         return box;
     }
 
-    /** Crea la barra de estado inferior. */
-    private HBox crearFooter() {
-        HBox footer = new HBox();
-        footer.setPadding(new Insets(5, 15, 5, 15));
-        footer.setStyle("-fx-background-color: #bdc3c7;");
-
-        lblStatus = new Label("Estado: Esperando acción del usuario...");
-        lblStatus.setFont(Font.font("Segoe UI", 12));
-        lblStatus.setTextFill(Color.web("#2c3e50"));
-
-        footer.getChildren().add(lblStatus);
-        return footer;
-    }
-
-    /** Actualiza el mensaje en la barra de estado. */
-    private void actualizarEstado(String mensaje) {
-        lblStatus.setText("Estado: " + mensaje);
-    }
 
     /** Carga los datos de Grafo y AVL desde los archivos CSV. */
     private void cargarDatos() {
         areaSalida.clear();
         areaSalida.appendText(">> INICIANDO PROTOCOLO DE CARGA DE DATOS...\n");
-        actualizarEstado("Cargando archivos...");
 
         // 1. Carga Grafo
         String rutaGrafo = txtRutaGrafo.getText();
@@ -245,7 +247,6 @@ public class OptimizadorLogisticoFX extends Application {
         }
 
         areaSalida.appendText(">> PROCESO COMPLETADO.\n");
-        actualizarEstado("Datos cargados. Listo.");
     }
 
     /** Ejecuta el algoritmo de Dijkstra (Ruta más corta desde un origen). */
@@ -258,7 +259,6 @@ public class OptimizadorLogisticoFX extends Application {
             return;
         }
 
-        actualizarEstado("Ejecutando algoritmo Dijkstra...");
         Map<String, Double> resultados = Dijkstra.dijkstraIterativo(logisticaGrafo, origen);
 
         StringBuilder sb = new StringBuilder();
@@ -273,13 +273,11 @@ public class OptimizadorLogisticoFX extends Application {
         });
 
         areaSalida.setText(sb.toString());
-        actualizarEstado("Dijkstra completado.");
     }
 
     /** Ejecuta el algoritmo de Floyd-Warshall (Costos mínimos entre todos los pares). */
     private void ejecutarFloydWarshall() {
         if (!validarGrafo()) return;
-        actualizarEstado("Calculando matriz de conectividad total...");
 
         Map<String, Map<String, Double>> resultados = FloydWarshall.floydWarshall(logisticaGrafo);
 
@@ -300,17 +298,15 @@ public class OptimizadorLogisticoFX extends Application {
             sb.append(String.format("%-15s", i.length() > 14 ? i.substring(0,14) : i));
             for (String j : nodos) {
                 double val = resultados.getOrDefault(i, Collections.emptyMap()).getOrDefault(j, Double.POSITIVE_INFINITY);
-                String valStr = (val == Double.POSITIVE_INFINITY) ? "INF" : (val == 0 ? "-" : String.format("%.1f", val));
+                String valStr = (val == Double.POSITIVE_INFINITY) ? "X" : (val == 0 ? "-" : String.format("%.1f", val));
                 sb.append(String.format("%-10s", valStr));
             }
             sb.append("\n");
         }
 
         areaSalida.setText(sb.toString());
-        actualizarEstado("Floyd-Warshall completado.");
     }
 
-    /** Ejecuta el algoritmo de Prim (Costo mínimo total de interconexión). */
     private void ejecutarPrim() {
         if (!validarGrafo()) return;
         String origen = txtParametroOrigen.getText().trim();
@@ -320,13 +316,31 @@ public class OptimizadorLogisticoFX extends Application {
             return;
         }
 
-        actualizarEstado("Calculando MST (Prim)...");
-        double costoTotal = AlgoritmoPrim.algoritmoPrim(logisticaGrafo, origen);
+        // NOTA: AlgoritmoPrim.algoritmoPrim debe actualizarse para devolver 'ResultadoMST'
+        // (Ver paso 2 más abajo)
+        ResultadoMST resultado = AlgoritmoPrim.algoritmoPrim(logisticaGrafo, origen);
 
-        areaSalida.setText("=== DISEÑO DE RED DE COSTO MÍNIMO (PRIM) ===\n\n" +
-                "Análisis de infraestructura completado.\n" +
-                "Costo Total de Interconexión (MST): " + String.format("%.2f", costoTotal) + " unidades.\n");
-        actualizarEstado("Prim completado.");
+        StringBuilder sb = new StringBuilder();
+        sb.append("=== DISEÑO DE RED DE COSTO MÍNIMO (PRIM) ===\n");
+        sb.append("Infraestructura óptima para conectar la red.\n\n");
+        
+        // Encabezado de la tabla (Similar a Dijkstra)
+        sb.append(String.format("%-20s %-20s %-10s\n", "DESDE", "HASTA", "COSTO"));
+        sb.append("----------------------------------------------------\n");
+
+        // Iterar sobre las aristas obtenidas
+        for (AristaMST arista : resultado.getAristas()) {
+            sb.append(String.format("%-20s %-20s %-10s\n", 
+                arista.origen, 
+                arista.destino, 
+                String.format("%.2f", arista.peso)
+            ));
+        }
+
+        sb.append("----------------------------------------------------\n");
+        sb.append("Costo Total de Interconexión (MST): " + String.format("%.2f", resultado.getCostoTotal()) + " unidades.\n");
+        
+        areaSalida.setText(sb.toString());
     }
 
     /** Ejecuta la búsqueda de un producto por ID en el Árbol AVL. */
@@ -335,7 +349,6 @@ public class OptimizadorLogisticoFX extends Application {
 
         try {
             int id = Integer.parseInt(txtParametroBusqueda.getText().trim());
-            actualizarEstado("Buscando producto ID: " + id + "...");
             NodoAVL nodo = inventarioAVL.buscar(id);
 
             StringBuilder sb = new StringBuilder();
@@ -351,7 +364,6 @@ public class OptimizadorLogisticoFX extends Application {
                 sb.append("El producto con ID ").append(id).append(" no existe en la base de datos.\n");
             }
             areaSalida.setText(sb.toString());
-            actualizarEstado("Búsqueda completada.");
 
         } catch (NumberFormatException e) {
             alertarError("Formato Inválido", "El ID del producto debe ser un número entero.");
@@ -361,13 +373,29 @@ public class OptimizadorLogisticoFX extends Application {
     /** Genera el reporte de inventario ordenado usando el recorrido Inorden del AVL. */
     private void ejecutarRecorridoInorden() {
         if (!validarAVL()) return;
-        actualizarEstado("Generando reporte de inventario...");
 
         String reporte = inventarioAVL.getInordenReporte();
         areaSalida.setText("=== REPORTE DE INVENTARIO (ORDENADO POR ID) ===\n\n" + reporte);
-        actualizarEstado("Reporte generado.");
     }
 
+    private void ejecutarRecorridoPostorden()
+    {
+        if(!validarAVL())
+            return;
+
+        String reporte = inventarioAVL.getPostordenReporte();
+        areaSalida.setText("=== REPORTE DE INVENTARIO (ORDENADO POR ID) ===\n\n" + reporte);
+    }
+
+    private void ejecutarRecorridoPreorden()
+    {
+        if(!validarAVL())
+            return;
+
+        String reporte = inventarioAVL.getPreordenReporte();
+        areaSalida.setText("=== REPORTE DE INVENTARIO (ORDENADO POR ID) ===\n\n" + reporte);
+    }
+    
     // Validaciones
     private boolean validarGrafo() {
         if (logisticaGrafo == null || logisticaGrafo.getListaAdyacencia().isEmpty()) {
