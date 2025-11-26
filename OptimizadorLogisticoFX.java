@@ -33,7 +33,7 @@ public class OptimizadorLogisticoFX extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        primaryStage.setTitle("Sistema de Gestión Logística - Graph Explorer");
+        primaryStage.setTitle("Proyecto Final de algoritmos");
 
         BorderPane root = new BorderPane();
         root.setStyle("-fx-background-color: #f4f6f7;");
@@ -138,7 +138,7 @@ public class OptimizadorLogisticoFX extends Application {
         VBox box = new VBox(10);
 
         VBox groupOrigen = new VBox(5);
-        groupOrigen.getChildren().addAll(new Label("Centro de Origen:"), txtParametroOrigen = new TextField("CD-Mexicali"));
+        groupOrigen.getChildren().addAll(new Label("Centro de Origen:"), txtParametroOrigen = new TextField(""));
 
         Button btnDijkstra = new Button("Ruta Más Corta (Dijkstra)");
         btnDijkstra.getStyleClass().add("btn-action");
@@ -186,7 +186,7 @@ public class OptimizadorLogisticoFX extends Application {
         VBox box = new VBox(10);
 
         VBox groupBusqueda = new VBox(5);
-        groupBusqueda.getChildren().addAll(new Label("ID Producto:"), txtParametroBusqueda = new TextField("5001"));
+        groupBusqueda.getChildren().addAll(new Label("ID Producto:"), txtParametroBusqueda = new TextField(""));
 
         Button btnBuscar = new Button("Consultar Stock");
         btnBuscar.getStyleClass().add("btn-action");
@@ -203,7 +203,7 @@ public class OptimizadorLogisticoFX extends Application {
         box.setPadding(new Insets(20));
         box.setStyle("-fx-background-color: white;");
 
-        Label lblTitulo = new Label("Consola de Resultados");
+        Label lblTitulo = new Label("Resultados");
         lblTitulo.setFont(Font.font("Segoe UI", FontWeight.BOLD, 16));
         lblTitulo.setTextFill(Color.web("#34495e"));
         lblTitulo.setPadding(new Insets(0, 0, 10, 0));
@@ -212,7 +212,7 @@ public class OptimizadorLogisticoFX extends Application {
         areaSalida.setEditable(false);
         areaSalida.setFont(Font.font("Consolas", 14));
         areaSalida.setStyle("-fx-control-inner-background: #fdfdfd; -fx-border-color: #dcdcdc;");
-        areaSalida.setText("Bienvenido al sistema.\nPor favor cargue los archivos CSV desde el panel izquierdo para comenzar.");
+        areaSalida.setText("->Carga los archivos CSV<-");
 
         VBox.setVgrow(areaSalida, Priority.ALWAYS);
 
@@ -224,16 +224,16 @@ public class OptimizadorLogisticoFX extends Application {
     /** Carga los datos de Grafo y AVL desde los archivos CSV. */
     private void cargarDatos() {
         areaSalida.clear();
-        areaSalida.appendText(">> INICIANDO PROTOCOLO DE CARGA DE DATOS...\n");
+        areaSalida.appendText("--->Cargando archivos con los datos\n");
 
         // 1. Carga Grafo
         String rutaGrafo = txtRutaGrafo.getText();
         logisticaGrafo = new GrafoLogistica();
         try {
             logisticaGrafo.cargarDesdeCSV(rutaGrafo);
-            areaSalida.appendText("   [OK] Red Logística cargada correctamente.\n");
+            areaSalida.appendText("--->Datos cargados\n");
         } catch (Exception e) {
-            areaSalida.appendText("   [ERROR] Fallo al cargar Rutas: " + e.getMessage() + "\n");
+            areaSalida.appendText("---->No se pudieron obtener los datos" + e.getMessage() + "\n");
         }
 
         // 2. Carga AVL
@@ -241,12 +241,12 @@ public class OptimizadorLogisticoFX extends Application {
         inventarioAVL = new ArbolAVL();
         try {
             inventarioAVL.cargarDesdeCSV(rutaAVL);
-            areaSalida.appendText("   [OK] Inventario Maestro cargado correctamente.\n");
+            areaSalida.appendText("--->Datos cargados\n");
         } catch (Exception e) {
-            areaSalida.appendText("   [ERROR] Fallo al cargar Inventario: " + e.getMessage() + "\n");
+            areaSalida.appendText("---->No se pudieron obtener los datos" + e.getMessage() + "\n");
         }
 
-        areaSalida.appendText(">> PROCESO COMPLETADO.\n");
+        areaSalida.appendText("--->Datos cargados correctamente\n");
     }
 
     /** Ejecuta el algoritmo de Dijkstra (Ruta más corta desde un origen). */
@@ -262,8 +262,8 @@ public class OptimizadorLogisticoFX extends Application {
         Map<String, Double> resultados = Dijkstra.dijkstraIterativo(logisticaGrafo, origen);
 
         StringBuilder sb = new StringBuilder();
-        sb.append("=== REPORTE DE RUTAS ÓPTIMAS (DIJKSTRA) ===\n");
-        sb.append("Origen de Despacho: ").append(origen).append("\n\n");
+        sb.append("=== DIJKSTRA ===\n");
+        sb.append("Origen: ").append(origen).append("\n\n");
         sb.append(String.format("%-20s %-10s\n", "DESTINO", "TIEMPO(H)"));
         sb.append("----------------------------------\n");
 
@@ -282,9 +282,7 @@ public class OptimizadorLogisticoFX extends Application {
         Map<String, Map<String, Double>> resultados = FloydWarshall.floydWarshall(logisticaGrafo);
 
         StringBuilder sb = new StringBuilder();
-        sb.append("=== MATRIZ DE CONECTIVIDAD TOTAL (FLOYD-WARSHALL) ===\n");
-        sb.append("Costos mínimos entre todos los pares de nodos.\n\n");
-
+        sb.append("=== FLOYD-WARSHALL - Matriz adyaciencia===\n");
         java.util.List<String> nodos = new java.util.ArrayList<>(logisticaGrafo.getListaAdyacencia().keySet());
         Collections.sort(nodos);
 
@@ -321,9 +319,7 @@ public class OptimizadorLogisticoFX extends Application {
         ResultadoMST resultado = AlgoritmoPrim.algoritmoPrim(logisticaGrafo, origen);
 
         StringBuilder sb = new StringBuilder();
-        sb.append("=== DISEÑO DE RED DE COSTO MÍNIMO (PRIM) ===\n");
-        sb.append("Infraestructura óptima para conectar la red.\n\n");
-        
+        sb.append("=== PRIM ===\n");        
         // Encabezado de la tabla (Similar a Dijkstra)
         sb.append(String.format("%-20s %-20s %-10s\n", "DESDE", "HASTA", "COSTO"));
         sb.append("----------------------------------------------------\n");
@@ -352,7 +348,7 @@ public class OptimizadorLogisticoFX extends Application {
             NodoAVL nodo = inventarioAVL.buscar(id);
 
             StringBuilder sb = new StringBuilder();
-            sb.append("=== CONSULTA DE STOCK ===\n\n");
+            sb.append("=== STOCK ===\n\n");
             if (nodo != null) {
                 sb.append("Estado: ENCONTRADO\n");
                 sb.append("ID Producto : ").append(nodo.clave).append("\n");
@@ -375,7 +371,7 @@ public class OptimizadorLogisticoFX extends Application {
         if (!validarAVL()) return;
 
         String reporte = inventarioAVL.getInordenReporte();
-        areaSalida.setText("=== REPORTE DE INVENTARIO (ORDENADO POR ID) ===\n\n" + reporte);
+        areaSalida.setText("=== REPORTE DE INVENTARIO (Inorden) ===\n\n" + reporte);
     }
 
     private void ejecutarRecorridoPostorden()
@@ -384,7 +380,7 @@ public class OptimizadorLogisticoFX extends Application {
             return;
 
         String reporte = inventarioAVL.getPostordenReporte();
-        areaSalida.setText("=== REPORTE DE INVENTARIO (ORDENADO POR ID) ===\n\n" + reporte);
+        areaSalida.setText("=== REPORTE DE INVENTARIO (Postorden) ===\n\n" + reporte);
     }
 
     private void ejecutarRecorridoPreorden()
@@ -393,7 +389,7 @@ public class OptimizadorLogisticoFX extends Application {
             return;
 
         String reporte = inventarioAVL.getPreordenReporte();
-        areaSalida.setText("=== REPORTE DE INVENTARIO (ORDENADO POR ID) ===\n\n" + reporte);
+        areaSalida.setText("=== REPORTE DE INVENTARIO (Preorden) ===\n\n" + reporte);
     }
     
     // Validaciones
