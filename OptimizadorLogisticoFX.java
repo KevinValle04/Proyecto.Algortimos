@@ -9,8 +9,18 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.stage.FileChooser; 
+import java.io.File;
 
 /**
  * Clase principal con la Interfaz Gráfica de Usuario (JavaFX) para el Optimizador Logístico.
@@ -20,12 +30,12 @@ public class OptimizadorLogisticoFX extends Application {
     private GrafoLogistica logisticaGrafo = null;
     private ArbolAVL inventarioAVL = null;
 
-    private TextArea areaSalida;
+    private VBox contenedorResultados; 
     private TextField txtRutaGrafo;
     private TextField txtRutaAVL;
     private TextField txtParametroOrigen;
     private TextField txtParametroBusqueda;
-    private Label lblStatus;
+    private CheckBox chkDijkstraRecursivo;
 
     public static void main(String[] args) {
         launch(args);
@@ -58,17 +68,7 @@ public class OptimizadorLogisticoFX extends Application {
         HBox header = new HBox();
         header.setPadding(new Insets(15, 25, 15, 25));
         header.setAlignment(Pos.CENTER_LEFT);
-        header.setStyle("-fx-background-color: #2c3e50;");
 
-        Label lblTitulo = new Label("OPTIMIZADOR LOGÍSTICO");
-        lblTitulo.setTextFill(Color.WHITE);
-        lblTitulo.setFont(Font.font("Segoe UI", FontWeight.BOLD, 22));
-
-        Label lblSubtitulo = new Label("  |  Graph Explorer");
-        lblSubtitulo.setTextFill(Color.web("#bdc3c7"));
-        lblSubtitulo.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 18));
-
-        header.getChildren().addAll(lblTitulo, lblSubtitulo);
         return header;
     }
 
@@ -117,14 +117,35 @@ public class OptimizadorLogisticoFX extends Application {
         VBox box = new VBox(10);
 
         VBox group1 = new VBox(5);
-                group1.getChildren().addAll(new Label("Archivo de Rutas (.csv):"), txtRutaGrafo = new TextField("C:\\Users\\jalex\\Documents\\NEWSEMESTER\\Algoritmos\\ProyectoAlgoritmos\\Proyecto-Algoritmos\\Copia de red_logistica_grafo.csv"));
+        Label lblRuta = new Label("Archivo de Rutas (.csv):");
+        
+        // Usamos un HBox para poner el texto y el botón uno al lado del otro
+        HBox filaGrafo = new HBox(5); 
+        txtRutaGrafo = new TextField(); 
+       txtRutaGrafo.setPrefWidth(220);
+        
+        Button btnExaminarGrafo = new Button("📂");
+        btnExaminarGrafo.setOnAction(e -> seleccionarArchivo(txtRutaGrafo)); 
+        
+        filaGrafo.getChildren().addAll(txtRutaGrafo, btnExaminarGrafo);
+        group1.getChildren().addAll(lblRuta, filaGrafo);
 
 
         VBox group2 = new VBox(5);
-                group2.getChildren().addAll(new Label("Archivo de Inventario (.csv):"), txtRutaAVL = new TextField("C:\\Users\\jalex\\Documents\\NEWSEMESTER\\Algoritmos\\ProyectoAlgoritmos\\Proyecto-Algoritmos\\Copia de inventario_avl.csv"));
+        Label lblInv = new Label("Archivo de Inventario (.csv):");
+        
+        HBox filaAVL = new HBox(5);
+        txtRutaAVL = new TextField();
+        txtRutaAVL.setPrefWidth(220);
+
+        Button btnExaminarAVL = new Button("📂");
+        btnExaminarAVL.setOnAction(e -> seleccionarArchivo(txtRutaAVL)); 
+
+        filaAVL.getChildren().addAll(txtRutaAVL, btnExaminarAVL);
+        group2.getChildren().addAll(lblInv, filaAVL);
 
 
-        Button btnCargar = new Button("Cargar Base de Datos");
+        Button btnCargar = new Button("Cargar Archivos");
         btnCargar.getStyleClass().add("btn-primary");
         btnCargar.setMaxWidth(Double.MAX_VALUE);
         btnCargar.setOnAction(e -> cargarDatos());
@@ -139,6 +160,8 @@ public class OptimizadorLogisticoFX extends Application {
 
         VBox groupOrigen = new VBox(5);
         groupOrigen.getChildren().addAll(new Label("Centro de Origen:"), txtParametroOrigen = new TextField(""));
+
+        chkDijkstraRecursivo = new CheckBox("Usar Modo Recursivo ");
 
         Button btnDijkstra = new Button("Ruta Más Corta (Dijkstra)");
         btnDijkstra.getStyleClass().add("btn-action");
@@ -155,47 +178,97 @@ public class OptimizadorLogisticoFX extends Application {
         btnPrim.setMaxWidth(Double.MAX_VALUE);
         btnPrim.setOnAction(e -> ejecutarPrim());
 
-        box.getChildren().addAll(groupOrigen, new Label("Algoritmos:"), btnDijkstra, btnFloyd, btnPrim);
+        box.getChildren().addAll(groupOrigen, new Label("Algoritmos:"),chkDijkstraRecursivo , btnDijkstra, btnFloyd, btnPrim);
         return box;
     }
 
-    private VBox crearContenidoRecorridoOrdenados(){
-    VBox box = new VBox(10);
-    
-    Button btnReporte = new Button("Reporte (Inorden)");
+   private VBox crearContenidoRecorridoOrdenados() {
+        VBox box = new VBox(10);
+        
+        //  Inorden
+        Button btnReporte = new Button("Ver Estructura (Inorden)");
         btnReporte.getStyleClass().add("btn-action");
         btnReporte.setMaxWidth(Double.MAX_VALUE);
-        btnReporte.setOnAction(e -> ejecutarRecorridoInorden());
+        btnReporte.setOnAction(e -> mostrarArbolVisual("Estructura (Inorden)", "INORDEN"));
 
-        Button btnReporte2 = new Button("Reporte (postorden)");
+        //  Postorden
+        Button btnReporte2 = new Button("Ver Estructura (Postorden)");
         btnReporte2.getStyleClass().add("btn-action");
         btnReporte2.setMaxWidth(Double.MAX_VALUE);
-        btnReporte2.setOnAction(e -> ejecutarRecorridoPostorden());
+        btnReporte2.setOnAction(e -> mostrarArbolVisual("Estructura (Postorden)", "POSTORDEN"));
 
-        Button btnReporte3 = new Button("Reporte (preorden)");
+        //  Preorden
+        Button btnReporte3 = new Button("Ver Estructura (Preorden)");
         btnReporte3.getStyleClass().add("btn-action");
         btnReporte3.setMaxWidth(Double.MAX_VALUE);
-        btnReporte3.setOnAction(e -> ejecutarRecorridoPreorden());
+        btnReporte3.setOnAction(e -> mostrarArbolVisual("Estructura (Preorden)", "PREORDEN"));
 
-        box.getChildren().addAll(btnReporte, btnReporte2  , btnReporte3);
+        box.getChildren().addAll(btnReporte, btnReporte2, btnReporte3);
         return box;
     }
 
     /** Contenido de la sección de gestión de Inventario AVL. */
-    private VBox crearContenidoAVL() {
-        VBox box = new VBox(10);
+private VBox crearContenidoAVL() {
+    VBox box = new VBox(10);
 
-        VBox groupBusqueda = new VBox(5);
-        groupBusqueda.getChildren().addAll(new Label("ID Producto:"), txtParametroBusqueda = new TextField(""));
+    // Busqueda
+    box.getChildren().addAll(new Label("ID Producto:"), txtParametroBusqueda = new TextField(""));
+    Button btnBuscar = new Button("Consultar Stock");
+    btnBuscar.getStyleClass().add("btn-action");
+    btnBuscar.setMaxWidth(Double.MAX_VALUE);
+    btnBuscar.setOnAction(e -> ejecutarBusquedaAVL());
 
-        Button btnBuscar = new Button("Consultar Stock");
-        btnBuscar.getStyleClass().add("btn-action");
-        btnBuscar.setMaxWidth(Double.MAX_VALUE);
-        btnBuscar.setOnAction(e -> ejecutarBusquedaAVL());
+    box.getChildren().add(new Separator());
 
-        box.getChildren().addAll(groupBusqueda, new Label("Operaciones:"), btnBuscar);
-        return box;
-    }
+    // Alta
+    Label lblAlta = new Label("Nuevo Ingreso:");
+    lblAlta.setStyle("-fx-font-weight: bold; -fx-text-fill:");
+
+    TextField txtNewID = new TextField(); txtNewID.setPromptText("Ingresa ID");
+    TextField txtNewNom = new TextField(); txtNewNom.setPromptText("Ingresa nombre producto");
+    TextField txtNewStock = new TextField(); txtNewStock.setPromptText("Ingresa cantidad");
+    TextField txtNewUbi = new TextField(); txtNewUbi.setPromptText("Ingresa ubicacion");
+
+    Button btnInsertar = new Button("Agregar al Inventario");
+    btnInsertar.getStyleClass().add("btn-primary");
+    btnInsertar.setMaxWidth(Double.MAX_VALUE);
+
+    // insersion
+    btnInsertar.setOnAction(e -> {
+        if (!validarAVL()) return;
+        try {
+            int id = Integer.parseInt(txtNewID.getText());
+            int stock = Integer.parseInt(txtNewStock.getText());
+            String nombre = txtNewNom.getText();
+            String ubi = txtNewUbi.getText();
+
+            if (nombre.isEmpty()) { alertarError("Error", "Nombre requerido"); return; }
+
+            Map<String, Object> datos = new HashMap<>();
+            datos.put("nombre", nombre);
+            datos.put("stock", stock);
+            datos.put("ubicacion", ubi);
+
+            inventarioAVL.insertar(id, datos); 
+
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Éxito");
+            alert.setHeaderText(null);
+            alert.setContentText("Producto #" + id + " agregado correctamente.");
+            alert.showAndWait();
+
+            txtNewID.clear(); txtNewNom.clear(); txtNewStock.clear(); txtNewUbi.clear();
+            List<Map<String, String>> datosActualizados = inventarioAVL.obtenerRecorridoEnLista("INORDEN");
+            mostrarTablaDin(Arrays.asList("ID", "PRODUCTO", "STOCK", "UBICACIÓN"), FXCollections.observableArrayList(datosActualizados));
+
+        } catch (NumberFormatException ex) {
+            alertarError("Error", "ID y Stock deben ser números enteros.");
+        }
+    });
+
+    box.getChildren().addAll(btnBuscar, lblAlta, txtNewID, txtNewNom, txtNewStock, txtNewUbi, btnInsertar);
+    return box;
+}
 
     /** Crea el área central de resultados. */
     private VBox crearAreaResultados() {
@@ -208,50 +281,48 @@ public class OptimizadorLogisticoFX extends Application {
         lblTitulo.setTextFill(Color.web("#34495e"));
         lblTitulo.setPadding(new Insets(0, 0, 10, 0));
 
-        areaSalida = new TextArea();
-        areaSalida.setEditable(false);
-        areaSalida.setFont(Font.font("Consolas", 14));
-        areaSalida.setStyle("-fx-control-inner-background: #fdfdfd; -fx-border-color: #dcdcdc;");
-        areaSalida.setText("->Carga los archivos CSV<-");
+        contenedorResultados = new VBox();
+        VBox.setVgrow(contenedorResultados, Priority.ALWAYS);
 
-        VBox.setVgrow(areaSalida, Priority.ALWAYS);
+        box.getChildren().addAll(lblTitulo,contenedorResultados);
 
-        box.getChildren().addAll(lblTitulo, areaSalida);
         return box;
     }
 
 
     /** Carga los datos de Grafo y AVL desde los archivos CSV. */
     private void cargarDatos() {
-        areaSalida.clear();
-        areaSalida.appendText("--->Cargando archivos con los datos\n");
-
-        // 1. Carga Grafo
         String rutaGrafo = txtRutaGrafo.getText();
         logisticaGrafo = new GrafoLogistica();
         try {
             logisticaGrafo.cargarDesdeCSV(rutaGrafo);
-            areaSalida.appendText("--->Datos cargados\n");
         } catch (Exception e) {
-            areaSalida.appendText("---->No se pudieron obtener los datos" + e.getMessage() + "\n");
+            alertarError("Error Carga Grafo", "No se pudo cargar el archivo de rutas:\n" + e.getMessage());
+            e.printStackTrace(); 
         }
 
-        // 2. Carga AVL
         String rutaAVL = txtRutaAVL.getText();
         inventarioAVL = new ArbolAVL();
         try {
             inventarioAVL.cargarDesdeCSV(rutaAVL);
-            areaSalida.appendText("--->Datos cargados\n");
         } catch (Exception e) {
-            areaSalida.appendText("---->No se pudieron obtener los datos" + e.getMessage() + "\n");
+            alertarError("Error Carga Inventario", "No se pudo cargar el archivo de inventario:\n" + e.getMessage());
+            e.printStackTrace();
         }
-
-        areaSalida.appendText("--->Datos cargados correctamente\n");
+        
+        if (inventarioAVL.raiz != null && !logisticaGrafo.getListaAdyacencia().isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Carga Exitosa");
+            alert.setHeaderText(null);
+            alert.setContentText("¡Datos cargados correctamente!");
+            alert.showAndWait();
+        }
     }
 
     /** Ejecuta el algoritmo de Dijkstra (Ruta más corta desde un origen). */
     private void ejecutarDijkstra() {
         if (!validarGrafo()) return;
+
         String origen = txtParametroOrigen.getText().trim();
 
         if (!logisticaGrafo.getListaAdyacencia().containsKey(origen)) {
@@ -259,20 +330,28 @@ public class OptimizadorLogisticoFX extends Application {
             return;
         }
 
-        Map<String, Double> resultados = Dijkstra.dijkstraIterativo(logisticaGrafo, origen);
+        Map<String, Double> resultados;
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("=== DIJKSTRA ===\n");
-        sb.append("Origen: ").append(origen).append("\n\n");
-        sb.append(String.format("%-20s %-10s\n", "DESTINO", "TIEMPO(H)"));
-        sb.append("----------------------------------\n");
+        if (chkDijkstraRecursivo.isSelected()) {
+            // Recursivo
+            resultados = DijkstraRecursivo.dijkstraRecursivo(logisticaGrafo, origen);
+            System.out.println("-> Usando lógica Recursiva");
+        } else {
+            //Interatico
+            resultados = Dijkstra.dijkstraIterativo(logisticaGrafo, origen);
+            System.out.println("-> Usando lógica Iterativa");
+        }
+
+        ObservableList<Map<String, String>> listaDatos = FXCollections.observableArrayList();
 
         resultados.forEach((destino, costo) -> {
-            String costoStr = (costo == Double.POSITIVE_INFINITY) ? "N/A" : String.format("%.2f", costo);
-            sb.append(String.format("%-20s %-10s\n", destino, costoStr));
+            Map<String, String> fila = new HashMap<>();
+            fila.put("DESTINO", destino);
+            fila.put("TIEMPO (H)", (costo == Double.POSITIVE_INFINITY) ? "Inalcanzable" : String.format("%.2f", costo));
+            listaDatos.add(fila);
         });
 
-        areaSalida.setText(sb.toString());
+        mostrarTablaDin(Arrays.asList("DESTINO", "TIEMPO (H)"), listaDatos);
     }
 
     /** Ejecuta el algoritmo de Floyd-Warshall (Costos mínimos entre todos los pares). */
@@ -280,63 +359,52 @@ public class OptimizadorLogisticoFX extends Application {
         if (!validarGrafo()) return;
 
         Map<String, Map<String, Double>> resultados = FloydWarshall.floydWarshall(logisticaGrafo);
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("=== FLOYD-WARSHALL - Matriz adyaciencia===\n");
-        java.util.List<String> nodos = new java.util.ArrayList<>(logisticaGrafo.getListaAdyacencia().keySet());
+        List<String> nodos = new ArrayList<>(logisticaGrafo.getListaAdyacencia().keySet());
         Collections.sort(nodos);
 
-        // Cabecera formateada
-        sb.append(String.format("%-15s", "ORIG\\DEST"));
-        for (String n : nodos) sb.append(String.format("%-10s", n.length() > 8 ? n.substring(0,8) : n));
-        sb.append("\n");
+        List<String> columnas = new ArrayList<>();
+        columnas.add("ORIGEN \\ DESTINO");
+        columnas.addAll(nodos);
 
-        // Filas formateadas
-        for (String i : nodos) {
-            sb.append(String.format("%-15s", i.length() > 14 ? i.substring(0,14) : i));
-            for (String j : nodos) {
-                double val = resultados.getOrDefault(i, Collections.emptyMap()).getOrDefault(j, Double.POSITIVE_INFINITY);
+        ObservableList<Map<String, String>> listaDatos = FXCollections.observableArrayList();
+
+        for (String origen : nodos) {
+            Map<String, String> fila = new HashMap<>();
+            fila.put("ORIGEN \\ DESTINO", origen); // Primera columna
+
+            for (String destino : nodos) {
+                double val = resultados.get(origen).get(destino);
                 String valStr = (val == Double.POSITIVE_INFINITY) ? "X" : (val == 0 ? "-" : String.format("%.1f", val));
-                sb.append(String.format("%-10s", valStr));
+                fila.put(destino, valStr);
             }
-            sb.append("\n");
+            listaDatos.add(fila);
         }
 
-        areaSalida.setText(sb.toString());
+        mostrarTablaDin(columnas, listaDatos);
     }
 
     private void ejecutarPrim() {
         if (!validarGrafo()) return;
         String origen = txtParametroOrigen.getText().trim();
-
-        if (!logisticaGrafo.getListaAdyacencia().containsKey(origen)) {
-            alertarError("Origen no válido", "El nodo '" + origen + "' no existe en la red.");
-            return;
-        }
-
-        // NOTA: AlgoritmoPrim.algoritmoPrim debe actualizarse para devolver 'ResultadoMST'
-        // (Ver paso 2 más abajo)
+                
         ResultadoMST resultado = AlgoritmoPrim.algoritmoPrim(logisticaGrafo, origen);
+        ObservableList<Map<String, String>> listaDatos = FXCollections.observableArrayList();
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("=== PRIM ===\n");        
-        // Encabezado de la tabla (Similar a Dijkstra)
-        sb.append(String.format("%-20s %-20s %-10s\n", "DESDE", "HASTA", "COSTO"));
-        sb.append("----------------------------------------------------\n");
-
-        // Iterar sobre las aristas obtenidas
         for (AristaMST arista : resultado.getAristas()) {
-            sb.append(String.format("%-20s %-20s %-10s\n", 
-                arista.origen, 
-                arista.destino, 
-                String.format("%.2f", arista.peso)
-            ));
+            Map<String, String> fila = new HashMap<>();
+            fila.put("DESDE", arista.origen);
+            fila.put("HASTA", arista.destino);
+            fila.put("COSTO", String.format("%.2f", arista.peso));
+            listaDatos.add(fila);
         }
-
-        sb.append("----------------------------------------------------\n");
-        sb.append("Costo Total de Interconexión (MST): " + String.format("%.2f", resultado.getCostoTotal()) + " unidades.\n");
         
-        areaSalida.setText(sb.toString());
+        Map<String, String> filaTotal = new HashMap<>();
+        filaTotal.put("DESDE", "TOTAL: ");
+        filaTotal.put("HASTA", "---");
+        filaTotal.put("COSTO", String.format("%.2f", resultado.getCostoTotal()));
+        listaDatos.add(filaTotal);
+
+        mostrarTablaDin(Arrays.asList("DESDE", "HASTA", "COSTO"), listaDatos);
     }
 
     /** Ejecuta la búsqueda de un producto por ID en el Árbol AVL. */
@@ -346,51 +414,27 @@ public class OptimizadorLogisticoFX extends Application {
         try {
             int id = Integer.parseInt(txtParametroBusqueda.getText().trim());
             NodoAVL nodo = inventarioAVL.buscar(id);
+            
+            ObservableList<Map<String, String>> listaDatos = FXCollections.observableArrayList();
 
-            StringBuilder sb = new StringBuilder();
-            sb.append("=== STOCK ===\n\n");
             if (nodo != null) {
-                sb.append("Estado: ENCONTRADO\n");
-                sb.append("ID Producto : ").append(nodo.clave).append("\n");
-                sb.append("Descripción : ").append(nodo.datos.get("nombre")).append("\n");
-                sb.append("Existencia  : ").append(nodo.datos.get("stock")).append(" unidades\n");
-                sb.append("Ubicación   : ").append(nodo.datos.get("ubicacion")).append("\n");
+                Map<String, String> fila = new HashMap<>();
+                fila.put("ID", String.valueOf(nodo.clave));
+                fila.put("PRODUCTO", nodo.datos.get("nombre").toString());
+                fila.put("STOCK", nodo.datos.get("stock").toString());
+                fila.put("UBICACIÓN", nodo.datos.get("ubicacion").toString());
+                listaDatos.add(fila);
+                
+                mostrarTablaDin(Arrays.asList("ID", "PRODUCTO", "STOCK", "UBICACIÓN"), listaDatos);
             } else {
-                sb.append("Estado: NO ENCONTRADO\n");
-                sb.append("El producto con ID ").append(id).append(" no existe en la base de datos.\n");
+                 alertarError("Sin resultados", "El producto con ID " + id + " no existe.");
             }
-            areaSalida.setText(sb.toString());
 
         } catch (NumberFormatException e) {
-            alertarError("Formato Inválido", "El ID del producto debe ser un número entero.");
+            alertarError("Formato Inválido", "El ID debe ser numérico.");
         }
     }
 
-    /** Genera el reporte de inventario ordenado usando el recorrido Inorden del AVL. */
-    private void ejecutarRecorridoInorden() {
-        if (!validarAVL()) return;
-
-        String reporte = inventarioAVL.getInordenReporte();
-        areaSalida.setText("=== REPORTE DE INVENTARIO (Inorden) ===\n\n" + reporte);
-    }
-
-    private void ejecutarRecorridoPostorden()
-    {
-        if(!validarAVL())
-            return;
-
-        String reporte = inventarioAVL.getPostordenReporte();
-        areaSalida.setText("=== REPORTE DE INVENTARIO (Postorden) ===\n\n" + reporte);
-    }
-
-    private void ejecutarRecorridoPreorden()
-    {
-        if(!validarAVL())
-            return;
-
-        String reporte = inventarioAVL.getPreordenReporte();
-        areaSalida.setText("=== REPORTE DE INVENTARIO (Preorden) ===\n\n" + reporte);
-    }
     
     // Validaciones
     private boolean validarGrafo() {
@@ -416,6 +460,89 @@ public class OptimizadorLogisticoFX extends Application {
         alert.setHeaderText(null);
         alert.setContentText(mensaje);
         alert.showAndWait();
+    }
+
+    /**
+     * Metodo para generar las tablas
+     */
+    private void mostrarTablaDin(List<String> nombresColumnas, ObservableList<Map<String, String>> datos) {
+        contenedorResultados.getChildren().clear(); // Limpiar 
+
+        TableView<Map<String, String>> tabla = new TableView<>(datos);
+        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY); // Ajustar ancho
+        VBox.setVgrow(tabla, Priority.ALWAYS);
+
+        for (String colName : nombresColumnas) {
+            TableColumn<Map<String, String>, String> col = new TableColumn<>(colName);
+            col.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().get(colName)));
+            tabla.getColumns().add(col);
+        }
+
+        contenedorResultados.getChildren().add(tabla);
+    }
+
+    /**
+     * Muestra la tabla la pagina y la grafica en el emergente
+     */
+    private void mostrarArbolVisual(String tituloVentana, String tipoRecorrido) {
+        if (!validarAVL()) 
+            return;
+
+        List<Map<String, String>> listaDatos = inventarioAVL.obtenerRecorridoEnLista(tipoRecorrido);
+
+        ObservableList<Map<String, String>> datosTabla = FXCollections.observableArrayList(listaDatos);
+        
+        List<String> columnas = Arrays.asList("ID", "PRODUCTO", "STOCK", "UBICACIÓN");
+        mostrarTablaDin(columnas, datosTabla);
+        
+        Label lblTituloTabla = new Label("Resultados: " + tituloVentana);
+        lblTituloTabla.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2c3e50; -fx-padding: 0 0 10 0;");
+        contenedorResultados.getChildren().add(0, lblTituloTabla);
+
+        Stage stageArbol = new Stage();
+        stageArbol.setTitle(tituloVentana); 
+
+        arbolDibujado visualizador = new arbolDibujado(inventarioAVL);
+        
+        List<Integer> idsOrdenados = new ArrayList<>();
+        for (Map<String, String> item : listaDatos) {
+            try {
+                idsOrdenados.add(Integer.parseInt(item.get("ID")));
+            } catch (Exception e) { }
+        }
+        visualizador.setOrdenVisita(idsOrdenados);
+
+        Scene scene = new Scene(visualizador, 900, 700);
+        stageArbol.setScene(scene);
+        stageArbol.show();
+
+        visualizador.dibujar();
+        scene.widthProperty().addListener((obs, oldVal, newVal) -> visualizador.dibujar());
+        scene.heightProperty().addListener((obs, oldVal, newVal) -> visualizador.dibujar());
+    }
+
+    /**
+     * Abrir el explorador de archivos
+     */
+    private void seleccionarArchivo(TextField campoTexto) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Seleccionar Archivo CSV");
+        
+        fileChooser.getExtensionFilters().add(
+            new FileChooser.ExtensionFilter("Archivos CSV (*.csv)", "*.csv")
+        );
+        
+        File initialDir = new File(System.getProperty("user.home") + "/Documents");
+        if (initialDir.exists()) {
+            fileChooser.setInitialDirectory(initialDir);
+        }
+
+        Stage stage = (Stage) campoTexto.getScene().getWindow();
+        File archivoSeleccionado = fileChooser.showOpenDialog(stage);
+        
+        if (archivoSeleccionado != null) {
+            campoTexto.setText(archivoSeleccionado.getAbsolutePath());
+        }
     }
 
     /** Retorna el CSS embebido para los estilos de la GUI. */
